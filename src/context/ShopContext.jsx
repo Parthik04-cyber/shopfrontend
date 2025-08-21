@@ -1,4 +1,5 @@
 import { createContext, useEffect, useState } from "react";
+import PropTypes from "prop-types";
 // import { products } from "../assets/assets";
 import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
@@ -81,9 +82,31 @@ const ShopContextProvider = (props) => {
 
   useEffect(() => {
     // INFO: Load cart items from localStorage when the component mounts
-    const storedCartItems = JSON.parse(localStorage.getItem("cartItems"));
-    if (storedCartItems) {
-      setCartItems(storedCartItems);
+    try {
+      const storedCartItems = localStorage.getItem("cartItems");
+      if (storedCartItems) {
+        const parsedCartItems = JSON.parse(storedCartItems);
+        // Clean up any empty or invalid entries
+        const cleanedCart = {};
+        for (const itemId in parsedCartItems) {
+          if (parsedCartItems[itemId] && typeof parsedCartItems[itemId] === 'object') {
+            const sizes = {};
+            for (const size in parsedCartItems[itemId]) {
+              const quantity = parsedCartItems[itemId][size];
+              if (quantity > 0) {
+                sizes[size] = quantity;
+              }
+            }
+            if (Object.keys(sizes).length > 0) {
+              cleanedCart[itemId] = sizes;
+            }
+          }
+        }
+        setCartItems(cleanedCart);
+      }
+    } catch (err) {
+      console.error("Error loading cart from localStorage:", err);
+      localStorage.removeItem("cartItems");
     }
   }, []);
 
@@ -124,8 +147,9 @@ const ShopContextProvider = (props) => {
           if (cartItems[items][item] > 0) {
             totalCount += cartItems[items][item];
           }
-        } catch (error) {
+        } catch (err) {
           // INFO: Error Handling
+          console.error("Error in getCartCount:", err);
         }
       }
     }
@@ -133,16 +157,50 @@ const ShopContextProvider = (props) => {
   };
 
   const updateQuantity = async (itemId, size, quantity) => {
-    if (quantity === 0) {
-      const productData = products.find((product) => product._id === itemId);
-      toast.success("Item Removed From The Cart");
-    }
-
     let cartData = structuredClone(cartItems);
 
-    cartData[itemId][size] = quantity;
+    if (quantity === 0) {
+      // Remove the specific size item completely
+      if (cartData[itemId]) {
+        delete cartData[itemId][size];
+        
+        // If no sizes left for this item, remove the item completely
+        if (Object.keys(cartData[itemId]).length === 0) {
+          delete cartData[itemId];
+        }
+      }
+      toast.success("Item Removed From The Cart");
+    } else {
+      // Update the quantity
+      if (!cartData[itemId]) {
+        cartData[itemId] = {};
+      }
+      cartData[itemId][size] = quantity;
+    }
 
     setCartItems(cartData);
+  };
+
+  const removeFromCart = async (itemId, size) => {
+    let cartData = structuredClone(cartItems);
+    
+    if (cartData[itemId] && cartData[itemId][size]) {
+      delete cartData[itemId][size];
+      
+      // If no sizes left for this item, remove the item completely
+      if (Object.keys(cartData[itemId]).length === 0) {
+        delete cartData[itemId];
+      }
+      
+      setCartItems(cartData);
+      toast.success("Item Removed From The Cart");
+    }
+  };
+
+  const clearCart = () => {
+    setCartItems({});
+    localStorage.removeItem("cartItems");
+    toast.success("Cart Cleared");
   };
 
   const getCartAmount = () => {
@@ -154,7 +212,9 @@ const ShopContextProvider = (props) => {
           if (cartItems[items][item] > 0) {
             totalAmount += itemInfo.price * cartItems[items][item];
           }
-        } catch (error) {}
+        } catch (err) {
+          console.error("Error calculating cart amount:", err);
+        }
       }
     }
     return totalAmount;
@@ -181,6 +241,8 @@ const ShopContextProvider = (props) => {
     addToCart,
     getCartCount,
     updateQuantity,
+    removeFromCart,
+    clearCart,
     getCartAmount,
     navigate,
     user,
@@ -192,6 +254,10 @@ const ShopContextProvider = (props) => {
   return (
     <ShopContext.Provider value={value}>{props.children}</ShopContext.Provider>
   );
+};
+
+ShopContextProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default ShopContextProvider;
