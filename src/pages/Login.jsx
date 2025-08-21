@@ -56,7 +56,7 @@ const Login = () => {
           lastName,
           email: data.email || email,
         };
-        login(userInfo);
+        login(userInfo, data.token);
         navigate("/");
       }
     } catch (err) {

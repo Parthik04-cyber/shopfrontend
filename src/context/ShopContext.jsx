@@ -36,9 +36,14 @@ const ShopContextProvider = (props) => {
     return null;
   });
 
+  // Token state
+  const [token, setToken] = useState(() => {
+    return localStorage.getItem("token") || '';
+  });
+
   // Login and logout helpers
-  // Accepts an object with all profile fields
-  const login = (userInfo) => {
+  // Accepts an object with all profile fields and token
+  const login = (userInfo, userToken = '') => {
     const userData = {
       firstName: userInfo.firstName || '',
       lastName: userInfo.lastName || '',
@@ -56,11 +61,19 @@ const ShopContextProvider = (props) => {
     };
     setUser(userData);
     localStorage.setItem("userInfo", JSON.stringify(userData));
+    
+    // Store token if provided
+    if (userToken) {
+      setToken(userToken);
+      localStorage.setItem("token", userToken);
+    }
   };
 
   const logout = () => {
     setUser(null);
+    setToken('');
     localStorage.removeItem("userInfo");
+    localStorage.removeItem("token");
   };
   useEffect(() => {
     const fetchProducts = async () => {
@@ -220,14 +233,18 @@ const ShopContextProvider = (props) => {
     let totalAmount = 0;
     for (const items in cartItems) {
       let itemInfo = products.find((product) => product._id === items);
-      for (const item in cartItems[items]) {
-        try {
-          if (cartItems[items][item] > 0) {
-            totalAmount += itemInfo.price * cartItems[items][item];
+      if (itemInfo) { // Check if product exists
+        for (const item in cartItems[items]) {
+          try {
+            if (cartItems[items][item] > 0) {
+              totalAmount += itemInfo.price * cartItems[items][item];
+            }
+          } catch (err) {
+            console.error("Error calculating cart amount:", err);
           }
-        } catch (err) {
-          console.error("Error calculating cart amount:", err);
         }
+      } else {
+        console.warn(`Product with ID ${items} not found in products list`);
       }
     }
     return totalAmount;
@@ -251,6 +268,7 @@ const ShopContextProvider = (props) => {
     showSearch,
     setShowSearch,
     cartItems,
+    setCartItems,
     addToCart,
     getCartCount,
     updateQuantity,
@@ -259,6 +277,7 @@ const ShopContextProvider = (props) => {
     getCartAmount,
     navigate,
     user,
+    token,
     login,
     logout,
     updateProfile,
