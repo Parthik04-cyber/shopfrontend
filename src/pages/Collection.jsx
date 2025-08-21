@@ -227,7 +227,7 @@ const Collection = () => {
               <input
                 className="w-3"
                 type="checkbox"
-                value={"Perfumers"}
+                value={"Perfumes"}
                 onChange={toggleSubCategory}
                 checked={subCategory.includes("Perfumes")}
               />
