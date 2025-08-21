@@ -63,17 +63,30 @@ const ShopContextProvider = (props) => {
     localStorage.removeItem("userInfo");
   };
   useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const res = await fetch("http://localhost:4000/api/product/list");
-      const data = await res.json();
-      setProducts(data.products);
-    } catch (err) {
-      console.error("Error fetching products:", err);
-    }
-  };
+    const fetchProducts = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_API_URL || "http://localhost:4000";
+        const res = await fetch(`${backendUrl}/api/product/list`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          setProducts(data.products || []);
+        } else {
+          console.error("API returned error:", data.message);
+          setProducts([]);
+        }
+      } catch (err) {
+        console.error("Error fetching products:", err);
+        setProducts([]);
+      }
+    };
 
-  fetchProducts();
+    fetchProducts();
   }, []);
   const navigate = useNavigate();
 
