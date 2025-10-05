@@ -197,11 +197,11 @@ const Collection = () => {
               <input
                 className="w-3"
                 type="checkbox"
-                value={"Googles"}
+                value={"Goggles"}
                 onChange={toggleSubCategory}
-                checked={subCategory.includes("Googles")}
+                checked={subCategory.includes("Goggles")}
               />
-              Googles
+              Goggles
             </label>
               <label className="flex gap-2 cursor-pointer">
               <input
